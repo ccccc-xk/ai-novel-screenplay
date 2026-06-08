@@ -25,16 +25,130 @@ document.addEventListener("DOMContentLoaded", async () => {
     await loadModels();
 });
 
+// ===== Demo模式数据 =====
+const DEMO_MODELS = [
+    { key: "rule", name: "规则引擎（离线免费）", description: "不需要任何API Key，纯规则转换，一键使用", api_base: "", model: "rule-engine", need_key: false, tag: "免费·推荐", has_builtin_key: false, builtin_key: "" },
+    { key: "free_fast", name: "Groq 免费", description: "免费70B大模型，需注册获取API Key", api_base: "https://api.groq.com/openai/v1", model: "llama-3.3-70b-versatile", need_key: true, tag: "免费", has_builtin_key: false, builtin_key: "" },
+    { key: "free_cn", name: "硅基流动", description: "国内平台，新用户送14元余额", api_base: "https://api.siliconflow.cn/v1", model: "Qwen/Qwen2.5-7B-Instruct", need_key: true, tag: "免费额度", has_builtin_key: false, builtin_key: "" },
+    { key: "cheap", name: "DeepSeek", description: "注册送500万token，效果好", api_base: "https://api.deepseek.com/v1", model: "deepseek-chat", need_key: true, tag: "极便宜", has_builtin_key: false, builtin_key: "" }
+];
+
+const DEMO_YAML = `metadata:
+  title: 命运的相遇
+  genre: 言情
+  source_chapters: 3
+  total_scenes: 3
+  characters:
+  - 林雪
+  - 苏云
+  - 王老师
+  version: '1.0'
+
+scenes:
+  - scene_number: 1
+    scene_heading: INT. 大学教室 - DAY
+    location: 大学教室
+    scene_type: INT
+    time_of_day: DAY
+    characters:
+    - 林雪
+    - 王老师
+    summary: 林雪在教室被老师提问
+    lines:
+      - line_type: action
+        action:
+          content: 阳光透过窗户洒在课桌上，林雪坐在靠窗的位置发呆。
+      - line_type: dialogue
+        dialogue:
+          character: 王老师
+          content: 林雪同学，请回答一下这个问题。
+      - line_type: action
+        action:
+          content: 林雪慌张地站起身。
+      - line_type: dialogue
+        dialogue:
+          character: 林雪
+          parenthetical: 小声
+          content: 对不起，老师，我没有听清。
+
+  - scene_number: 2
+    scene_heading: INT. 图书馆 - AFTERNOON
+    location: 图书馆
+    scene_type: INT
+    time_of_day: DAY
+    characters:
+    - 林雪
+    - 苏云
+    summary: 林雪在图书馆遇到苏云
+    lines:
+      - line_type: action
+        action:
+          content: 林雪走到文学区的书架前，踮起脚尖想要拿最高层的一本书。
+      - line_type: dialogue
+        dialogue:
+          character: 苏云
+          content: 需要帮忙吗？
+      - line_type: action
+        action:
+          content: 林雪转过头，看到一个高挑的男生正微笑着看着她。
+      - line_type: dialogue
+        dialogue:
+          character: 林雪
+          parenthetical: 微微脸红
+          content: 谢谢，那本《百年孤独》。
+
+  - scene_number: 3
+    scene_heading: INT. 图书馆角落 - EVENING
+    location: 图书馆角落
+    scene_type: INT
+    time_of_day: EVENING
+    characters:
+    - 林雪
+    - 苏云
+    summary: 两人发现共同爱好
+    lines:
+      - line_type: dialogue
+        dialogue:
+          character: 苏云
+          content: 你也喜欢马尔克斯？他的魔幻现实主义真的很迷人。
+      - line_type: dialogue
+        dialogue:
+          character: 林雪
+          parenthetical: 眼睛亮了起来
+          content: 是的！尤其是《百年孤独》，我已经读了三遍了。
+      - line_type: dialogue
+        dialogue:
+          character: 苏云
+          content: 我叫苏云，中文系的。你呢？
+      - line_type: dialogue
+        dialogue:
+          character: 林雪
+          content: 我叫林雪，外语系的。`;
+
+// ===== 检测是否为Demo模式 =====
+let isDemoMode = false;
+
 // ===== 从后端加载内置模型列表 =====
 async function loadModels() {
     try {
         const res = await fetch("/api/models");
+        if (!res.ok) throw new Error("API not available");
         const data = await res.json();
         state.models = data.models;
         state.provider = data.default;
         renderProviderGrid(data.models, data.default);
     } catch (e) {
-        console.error("加载模型列表失败:", e);
+        console.log("后端不可用，启用Demo模式");
+        isDemoMode = true;
+        state.models = DEMO_MODELS;
+        state.provider = "rule";
+        renderProviderGrid(DEMO_MODELS, "rule");
+        // 显示Demo模式提示
+        const hint = document.createElement("div");
+        hint.style.cssText = "background:#fef3c7;border:1px solid #fde68a;border-radius:8px;padding:10px 16px;margin-bottom:16px;font-size:0.85rem;color:#92400e;text-align:center;";
+        hint.innerHTML = "⚡ <b>Demo模式</b> — 当前为在线预览，完整功能请本地运行 <code>python main.py</code>";
+        const steps = $(".steps");
+        if (steps) steps.parentNode.insertBefore(hint, steps.nextSibling);
     }
 }
 
@@ -219,6 +333,35 @@ window.goToStep = goToStep;
 // ===== 开始转换 =====
 async function startConversion() {
     const model = state.models.find(m => m.key === state.provider);
+
+    // Demo模式：直接展示示例结果
+    if (isDemoMode) {
+        goToStep(3);
+        const log = $("#conversion-log");
+        const progressFill = $("#progress-fill");
+        const progressText = $("#progress-text");
+        log.innerHTML = "";
+        progressFill.style.width = "0%";
+        addLog("📐 Demo模式 — 展示示例转换结果", log);
+        progressFill.style.width = "30%";
+        progressText.textContent = "正在解析文件...";
+        await sleep(500);
+        addLog("📄 解析完成：3 章，856 字", log);
+        progressFill.style.width = "60%";
+        progressText.textContent = "正在转换中...";
+        await sleep(500);
+        addLog("📊 提取元数据：命运的相遇 / 言情", log);
+        progressFill.style.width = "90%";
+        progressText.textContent = "正在转换中 90%...";
+        await sleep(500);
+        progressFill.style.width = "100%";
+        progressText.textContent = "转换完成！";
+        addLog("🎉 转换完成！共生成 3 个场景", log, "success");
+        state.yamlOutput = DEMO_YAML;
+        state.screenplay = { title: "命运的相遇", characters: ["林雪", "苏云", "王老师"] };
+        setTimeout(() => showResult({ yaml: DEMO_YAML, scene_count: 3, metadata: state.screenplay }), 800);
+        return;
+    }
 
     // 规则引擎模式
     if (state.provider === "rule") {
@@ -405,6 +548,8 @@ function formatFileSize(bytes) {
     if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
     return (bytes / (1024 * 1024)).toFixed(1) + " MB";
 }
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
 function addLog(text, container, type = "") {
     const div = document.createElement("div");
