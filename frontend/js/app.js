@@ -283,6 +283,24 @@ async function handleFile(file) {
     $("#file-info").classList.remove("hidden");
     $("#upload-area").classList.add("hidden");
 
+    // Demo模式：模拟章节解析
+    if (isDemoMode) {
+        const demoChapters = [
+            { title: "第一章 命运的相遇", char_count: 312 },
+            { title: "第二章 图书馆的秘密", char_count: 286 },
+            { title: "第三章 约定", char_count: 258 }
+        ];
+        state.chapters = demoChapters;
+        $("#chapter-list").innerHTML = demoChapters.map(ch =>
+            `<div class="chapter-item">
+                <span class="chapter-title">${ch.title}</span>
+                <span class="chapter-chars">${ch.char_count} 字</span>
+            </div>`
+        ).join("");
+        $("#btn-next-1").disabled = false;
+        return;
+    }
+
     try {
         const formData = new FormData();
         formData.append("file", file);
