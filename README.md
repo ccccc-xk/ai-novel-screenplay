@@ -10,6 +10,8 @@
 - 🤖 **实时进度反馈**：流式转换，实时显示每章转换进度
 - 💾 **在线预览导出**：转换完成后可预览、复制、下载YAML文件
 - 🧩 **多模型支持**：兼容OpenAI、DeepSeek、智谱AI等大模型API
+- 📐 **规则引擎**：离线模式，纯正则转换，零成本免费使用
+- ⚡ **批量处理**：支持大文件（1000+章节）高效转换
 
 ## 📐 架构设计
 
@@ -17,6 +19,7 @@
 ├── main.py                 # FastAPI 入口
 ├── backend/
 │   ├── app.py              # API 路由
+│   ├── config.py           # 内置模型配置
 │   ├── parser/             # 小说解析模块
 │   │   ├── txt_parser.py   # TXT 文件解析（自动编码检测）
 │   │   ├── docx_parser.py  # DOCX 文件解析
@@ -24,7 +27,8 @@
 │   ├── converter/          # AI 转换模块
 │   │   ├── llm_client.py   # 大模型 API 封装
 │   │   ├── prompt_builder.py    # Prompt 工程
-│   │   └── screenplay_converter.py  # 转换主逻辑
+│   │   ├── screenplay_converter.py  # 转换主逻辑
+│   │   └── rule_converter.py    # 规则引擎（离线）
 │   ├── schema/             # YAML Schema 定义
 │   │   └── screenplay_schema.py
 │   └── models/             # Pydantic 数据模型
@@ -39,6 +43,9 @@
 │   ├── sample_novel.txt    # 示例小说（3章）
 │   └── sample_output.yaml  # 示例输出
 └── tests/                  # 测试用例
+    ├── test_parser.py      # 解析器测试（7个）
+    ├── test_converter.py   # 转换器测试（6个）
+    └── test_schema.py      # Schema测试（6个）
 ```
 
 ## 🛠️ 技术栈
@@ -57,8 +64,8 @@
 
 ### 1. 环境要求
 
-- Python 3.10+
-- 一个大模型 API Key（OpenAI / DeepSeek / 智谱AI 等）
+- Python 3.10+（推荐 3.14）
+- pip
 
 ### 2. 安装依赖
 
@@ -66,60 +73,39 @@
 pip install -r requirements.txt
 ```
 
+> 💡 国内用户可使用清华镜像加速：
+> ```bash
+> pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
+> ```
+
 ### 3. 启动服务
 
 ```bash
 python main.py
 ```
 
-服务启动后访问 http://localhost:8000
+### 4. 打开浏览器
 
-### 4. 使用流程
+访问 http://127.0.0.1:8000
 
-1. **上传小说文件**：支持 .txt 和 .docx 格式，系统自动检测章节结构
-2. **配置 API**：输入 API Key、选择模型
-3. **开始转换**：AI 逐章分析并转换为剧本格式
-4. **预览导出**：在线查看 YAML 剧本，复制或下载
+## 📋 使用流程
 
-## 📝 YAML Schema 说明
+1. **上传小说文件** — 支持 `.txt` 和 `.docx` 格式
+2. **选择转换方式** — 规则引擎（免费离线）或 AI 模型
+3. **一键转换** — AI 自动生成结构化剧本
+4. **预览导出** — 复制或下载 YAML 文件
 
-详细的 Schema 设计文档请参阅 [docs/yaml-schema.md](docs/yaml-schema.md)
-
-### 核心结构概览
-
-```yaml
-metadata:           # 元数据
-  title: 剧本标题
-  author: 原作者
-  genre: 类型题材
-  characters: [角色列表]
-  synopsis: 故事梗概
-
-scenes:             # 场景列表
-  - scene_number: 1
-    scene_heading: "INT/EXT. 地点 - 时间"
-    location: 地点
-    scene_type: INT/EXT
-    time_of_day: DAY/NIGHT
-    characters: [出场角色]
-    lines:          # 场景内容
-      - line_type: action     # 动作描写
-      - line_type: dialogue   # 对白
-      - line_type: transition # 转场
-```
-
-## 📖 示例
-
-项目提供了完整的示例文件：
-
-- [examples/sample_novel.txt](examples/sample_novel.txt) — 3章示例小说《命运的相遇》
-- [examples/sample_output.yaml](examples/sample_output.yaml) — 对应的YAML剧本输出
-
-## 🧪 测试
+## 🧪 运行测试
 
 ```bash
-pytest tests/ -v
+python -m pytest tests/ -v
 ```
+
+测试覆盖：
+- 解析器测试：7 个用例
+- 转换器测试：6 个用例
+- Schema测试：6 个用例
+- **总计：19 个用例全部通过**
 
 ## 📄 License
 
