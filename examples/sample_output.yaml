@@ -1,0 +1,183 @@
+metadata:
+  title: 命运的相遇
+  author: ""
+  adapter: ""
+  genre: 都市情感
+  version: '1.0'
+  created_at: '2026-06-08T15:00:00'
+  source_chapters: 3
+  total_scenes: 6
+  characters:
+    - 林晓
+    - 苏然
+  synopsis: 广告设计师林晓与科技公司产品经理苏然从意外相遇到渐生情愫的都市爱情故事
+scenes:
+  - scene_number: 1
+    scene_heading: EXT. 城市街道 - DUSK
+    location: 城市街道
+    scene_type: EXT
+    time_of_day: DUSK
+    characters:
+      - 林晓
+    summary: 傍晚时分，林晓下班走出公司
+    lines:
+      - line_type: action
+        action:
+          content: 深秋的傍晚，夕阳将整座城市染成金黄色。林晓推开公司大门，疲惫地走向地铁站。
+  - scene_number: 2
+    scene_heading: INT. 地铁站 - NIGHT
+    location: 地铁站
+    scene_type: INT
+    time_of_day: NIGHT
+    characters:
+      - 林晓
+      - 苏然
+    summary: 苏然匆忙中撞到林晓，摔坏了她的手机
+    lines:
+      - line_type: action
+        action:
+          content: 地铁站里人来人往。林晓低头看手机，突然被一个匆忙奔跑的身影撞了一下。手机脱手飞出，摔在地上。
+      - line_type: dialogue
+        dialogue:
+          character: 苏然
+          parenthetical: 慌忙停下
+          content: 对不起对不起！
+      - line_type: action
+        action:
+          content: 苏然弯腰捡起手机，递给林晓。他穿着褶皱的白衬衫，领带松垮。
+      - line_type: dialogue
+        dialogue:
+          character: 林晓
+          parenthetical: 尽量保持平静
+          content: 你知道这块屏幕多少钱吗？
+      - line_type: dialogue
+        dialogue:
+          character: 苏然
+          parenthetical: 掏出名片
+          content: 我叫苏然，这是我的联系方式。修理费用我来出，真的很抱歉。
+      - line_type: action
+        action:
+          content: 林晓接过名片——"星辰科技，产品经理"。
+      - line_type: dialogue
+        dialogue:
+          character: 林晓
+          content: 算了，下次注意点就好。
+      - line_type: action
+        action:
+          content: 苏然看着她离去的背影，在心里记住了这张脸。
+  - scene_number: 3
+    scene_heading: INT. 广告公司会议室 - DAY
+    location: 广告公司会议室
+    scene_type: INT
+    time_of_day: DAY
+    characters:
+      - 林晓
+      - 苏然
+    summary: 一周后两人在项目会议上意外重逢
+    lines:
+      - line_type: action
+        action:
+          content: 会议室里，林晓打开项目资料，看到客户方负责人名字时愣住了。
+      - line_type: dialogue
+        dialogue:
+          character: 苏然
+          parenthetical: 走进会议室，露出惊讶
+          content: 林设计师，这次项目由我来对接。世界真小。
+      - line_type: dialogue
+        dialogue:
+          character: 林晓
+          parenthetical: 微笑
+          content: 希望这次合作顺利，苏经理。
+  - scene_number: 4
+    scene_heading: INT. 办公室 - NIGHT
+    location: 办公室
+    scene_type: INT
+    time_of_day: NIGHT
+    characters:
+      - 林晓
+      - 苏然
+    summary: 加班深夜，两人在工作中逐渐了解彼此
+    lines:
+      - line_type: action
+        action:
+          content: 深夜的办公室只剩两人。苏然递给林晓一杯咖啡。
+      - line_type: dialogue
+        dialogue:
+          character: 苏然
+          parenthetical: 靠在办公桌旁
+          content: 你总是这么拼命吗？
+      - line_type: dialogue
+        dialogue:
+          character: 林晓
+          parenthetical: 吹了吹咖啡热气
+          content: 做自己喜欢的事，不觉得辛苦。
+      - line_type: dialogue
+        dialogue:
+          character: 苏然
+          content: 那你觉得辛苦的是什么？
+      - line_type: action
+        action:
+          content: 林晓沉默片刻，目光落在窗外的万家灯火上。
+      - line_type: dialogue
+        dialogue:
+          character: 林晓
+          parenthetical: 轻声
+          content: 是没有人理解你在做什么。
+      - line_type: action
+        action:
+          content: 苏然看着她的侧脸，心中泛起一丝涟漪。
+  - scene_number: 5
+    scene_heading: INT. 咖啡馆 - DAY
+    location: 咖啡馆
+    scene_type: INT
+    time_of_day: DAY
+    characters:
+      - 林晓
+      - 苏然
+    summary: 苏然借讨论方案之名约林晓，想表白却被打断
+    lines:
+      - line_type: action
+        action:
+          content: 周末下午，安静的咖啡馆。桌上放着两杯拿铁和一小束雏菊，苏然的笔记本电脑没有打开。
+      - line_type: dialogue
+        dialogue:
+          character: 苏然
+          parenthetical: 有些紧张
+          content: 方案的事，其实已经差不多了。今天约你出来，是想……
+      - line_type: action
+        action:
+          content: 林晓的手机响了。
+      - line_type: dialogue
+        dialogue:
+          character: 林晓
+          parenthetical: 压低声音，尴尬地看了苏然一眼
+          content: 妈，我现在有事，回头再说。
+      - line_type: dialogue
+        dialogue:
+          character: 苏然
+          parenthetical: 故作随意
+          content: 你妈妈催你相亲啊？
+      - line_type: dialogue
+        dialogue:
+          character: 林晓
+          parenthetical: 苦笑
+          content: 到了这个年纪，家里总免不了操心这些。
+      - line_type: action
+        action:
+          content: 苏然放下杯子，认真地看着她。
+      - line_type: dialogue
+        dialogue:
+          character: 苏然
+          parenthetical: 认真
+          content: 那你觉得……我怎么样？
+      - line_type: action
+        action:
+          content: 林晓愣住了。窗外阳光洒进来，落在苏然真诚的脸上。她心跳加速，耳根微微发烫。
+      - line_type: dialogue
+        dialogue:
+          character: 林晓
+          parenthetical: 低头，嘴角上扬
+          content: 你？你连别人的手机都保护不了，还想保护谁？
+      - line_type: action
+        action:
+          content: 苏然先是一愣，随即笑了。他知道，这不是拒绝。
