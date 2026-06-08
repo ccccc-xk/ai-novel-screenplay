@@ -33,3 +33,6 @@ Thumbs.db
 
 # Uploads
 uploads/
+
+# Wrangler
+.wrangler/
