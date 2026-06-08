@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI小说转剧本工具</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- 头部 -->
+        <header class="header">
+            <h1>🎬 AI小说转剧本工具</h1>
+            <p class="subtitle">上传小说文件，AI自动生成结构化YAML剧本</p>
+        </header>
+
+        <!-- 步骤指示器（可点击跳转） -->
+        <div class="steps">
+            <div class="step active" data-step="1" onclick="goToStep(1)">
+                <span class="step-num">1</span>
+                <span class="step-label">上传小说</span>
+            </div>
+            <div class="step-line"></div>
+            <div class="step" data-step="2" onclick="goToStep(2)">
+                <span class="step-num">2</span>
+                <span class="step-label">配置模型</span>
+            </div>
+            <div class="step-line"></div>
+            <div class="step" data-step="3" onclick="goToStep(3)">
+                <span class="step-num">3</span>
+                <span class="step-label">AI转换</span>
+            </div>
+            <div class="step-line"></div>
+            <div class="step" data-step="4" onclick="goToStep(4)">
+                <span class="step-num">4</span>
+                <span class="step-label">预览导出</span>
+            </div>
+        </div>
+
+        <!-- 步骤1: 上传文件 -->
+        <section id="step-1" class="section">
+            <h2>📄 上传小说文件</h2>
+            <div class="upload-area" id="upload-area">
+                <div class="upload-icon">📁</div>
+                <p>拖拽文件到此处，或点击选择文件</p>
+                <p class="upload-hint">支持 .txt 和 .docx 格式</p>
+                <input type="file" id="file-input" accept=".txt,.docx" hidden>
+            </div>
+            <div id="file-info" class="file-info hidden">
+                <div class="file-detail">
+                    <span class="file-name" id="file-name"></span>
+                    <span class="file-size" id="file-size"></span>
+                    <button class="btn-remove" id="btn-remove" title="移除文件">✕</button>
+                </div>
+                <div id="chapter-list" class="chapter-list"></div>
+            </div>
+            <button class="btn btn-primary" id="btn-next-1" disabled>下一步：配置API</button>
+        </section>
+
+        <!-- 步骤2: API配置 -->
+        <section id="step-2" class="section hidden">
+            <h2>🔑 选择转换方式</h2>
+
+            <!-- 快速选择提供商 -->
+            <div class="form-group">
+                <label>选择转换方式（默认已选最佳免费方案）</label>
+                <div class="provider-grid" id="provider-grid">
+                    <!-- 由JS从后端动态加载 -->
+                    <p style="color:var(--gray-400)">加载中...</p>
+                </div>
+            </div>
+
+            <div id="provider-hint" class="provider-hint">
+                <p>💡 使用本地 Ollama：先安装 <a href="https://ollama.com" target="_blank">ollama</a>，然后运行 <code>ollama pull qwen2.5:7b</code></p>
+            </div>
+
+            <div id="api-config-section">
+                <div class="form-group">
+                    <label for="api-key">API Key</label>
+                    <input type="password" id="api-key" placeholder="输入你的API Key（Ollama本地可留空）" class="input">
+                </div>
+                <div class="form-group">
+                    <label for="api-base">API Base URL</label>
+                    <input type="text" id="api-base" value="http://localhost:11434/v1" class="input">
+                </div>
+                <div class="form-group">
+                    <label for="model">模型名称</label>
+                    <input type="text" id="model" value="qwen2.5:7b" class="input">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="novel-title">小说标题（可选）</label>
+                <input type="text" id="novel-title" class="input" placeholder="留空则使用文件名">
+            </div>
+
+            <div class="btn-group">
+                <button class="btn btn-secondary" id="btn-back-2">返回</button>
+                <button class="btn btn-primary" id="btn-next-2">开始转换</button>
+            </div>
+        </section>
+
+        <!-- 步骤3: 转换进度 -->
+        <section id="step-3" class="section hidden">
+            <h2>⚙️ AI转换中</h2>
+            <div class="progress-container">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progress-fill"></div>
+                </div>
+                <span class="progress-text" id="progress-text">准备中...</span>
+            </div>
+            <div id="conversion-log" class="conversion-log"></div>
+            <div class="btn-group">
+                <button class="btn btn-secondary" id="btn-back-3">⬅️ 返回上一步</button>
+            </div>
+        </section>
+
+        <!-- 步骤4: 预览和导出 -->
+        <section id="step-4" class="section hidden">
+            <h2>📋 转换结果</h2>
+            <div class="result-header">
+                <div class="result-stats">
+                    <span id="stat-scenes">0 个场景</span>
+                    <span id="stat-chars">0 个角色</span>
+                </div>
+                <div class="result-actions">
+                    <button class="btn btn-secondary" id="btn-copy">📋 复制YAML</button>
+                    <button class="btn btn-primary" id="btn-download">💾 下载YAML</button>
+                </div>
+            </div>
+            <div class="yaml-viewer">
+                <pre id="yaml-output"></pre>
+            </div>
+            <div class="btn-group">
+                <button class="btn btn-secondary" id="btn-back-4">⬅️ 返回上一步</button>
+                <button class="btn btn-secondary" id="btn-new">🔄 转换新文件</button>
+            </div>
+        </section>
+    </div>
+
+    <script src="/static/js/app.js"></script>
+</body>
+</html>
