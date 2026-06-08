@@ -16,6 +16,7 @@ const state = {
 
 const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => document.querySelectorAll(sel);
+const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
 // ===== 初始化 =====
 document.addEventListener("DOMContentLoaded", async () => {
@@ -548,8 +549,6 @@ function formatFileSize(bytes) {
     if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
     return (bytes / (1024 * 1024)).toFixed(1) + " MB";
 }
-
-function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
 function addLog(text, container, type = "") {
     const div = document.createElement("div");
