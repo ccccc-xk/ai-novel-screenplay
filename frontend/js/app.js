@@ -306,12 +306,12 @@ async function handleFile(file) {
             const text = await readFileAsText(file);
             const chapters = parseChaptersFromText(text);
             state.chapters = chapters;
-            $("#chapter-list").innerHTML = chapters.slice(0, 20).map(ch =>
+            $("#chapter-list").innerHTML = chapters.map(ch =>
                 `<div class="chapter-item">
                     <span class="chapter-title">${ch.title}</span>
                     <span class="chapter-chars">${ch.char_count} 字</span>
                 </div>`
-            ).join("") + (chapters.length > 20 ? `<div class="chapter-item" style="opacity:0.6"><span class="chapter-title">... 共 ${chapters.length} 章</span></div>` : "");
+            ).join("");
             $("#btn-next-1").disabled = false;
         } catch (err) {
             console.warn("大文件解析失败:", err.message);
