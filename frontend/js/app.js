@@ -463,15 +463,9 @@ async function startRuleConversion() {
         formData.append("file", state.file);
         formData.append("novel_title", $("#novel-title").value.trim());
 
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 25000);
+        addLog("⚙️ 正在应用规则转换（大文件可能需要1-2分钟）...", log);
 
-        const res = await fetch("/api/convert/rule", {
-            method: "POST",
-            body: formData,
-            signal: controller.signal
-        });
-        clearTimeout(timeoutId);
+        const res = await fetch("/api/convert/rule", { method: "POST", body: formData });
         if (!res.ok) {
             let detail = "转换失败";
             try { detail = (await res.json()).detail || detail; } catch(e) {}

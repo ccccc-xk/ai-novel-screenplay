@@ -186,7 +186,7 @@ def convert_novel_by_rule(novel_file: NovelFile, novel_title: str = "") -> Scree
     使用规则引擎将小说转换为剧本
     优化：每章最多处理3000字，避免大文件超时
     """
-    MAX_CHARS_PER_CHAPTER = 3000
+    MAX_CHARS_PER_CHAPTER = 1000
     all_scenes: list[Scene] = []
     all_characters = set()
 
