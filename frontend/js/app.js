@@ -405,16 +405,8 @@ async function startConversion() {
     try {
         addLog(`🚀 正在使用 ${model?.name || state.provider} 一键转换...`, log);
 
-        // 大文件截取前100KB避免Render超时
-        let uploadFile = state.file;
-        if (state.file.size > 100 * 1024) {
-            addLog("📄 文件较大，截取前100KB进行转换...", log);
-            uploadFile = state.file.slice(0, 100 * 1024, "text/plain");
-            uploadFile = new File([uploadFile], state.file.name, { type: "text/plain" });
-        }
-
         const formData = new FormData();
-        formData.append("file", uploadFile);
+        formData.append("file", state.file);
         formData.append("provider", state.provider);
         formData.append("api_key", userApiKey);
         formData.append("api_base", apiBase);
@@ -467,16 +459,8 @@ async function startRuleConversion() {
         progressFill.style.width = "50%";
         progressText.textContent = "规则转换中...";
 
-        // 大文件截取前100KB避免Render超时
-        let uploadFile = state.file;
-        if (state.file.size > 100 * 1024) {
-            addLog("📄 文件较大（" + (state.file.size / 1024 / 1024).toFixed(1) + "MB），截取前100KB进行转换...", log);
-            uploadFile = state.file.slice(0, 100 * 1024, "text/plain");
-            uploadFile = new File([uploadFile], state.file.name, { type: "text/plain" });
-        }
-
         const formData = new FormData();
-        formData.append("file", uploadFile);
+        formData.append("file", state.file);
         formData.append("novel_title", $("#novel-title").value.trim());
 
         const controller = new AbortController();

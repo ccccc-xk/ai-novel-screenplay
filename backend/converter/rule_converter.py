@@ -184,19 +184,21 @@ def convert_chapter_to_scenes(chapter: Chapter, scene_start: int) -> list[Scene]
 def convert_novel_by_rule(novel_file: NovelFile, novel_title: str = "") -> Screenplay:
     """
     使用规则引擎将小说转换为剧本
-
-    Args:
-        novel_file: 解析好的小说文件
-        novel_title: 小说标题
-
-    Returns:
-        完整的剧本对象
+    优化：每章最多处理3000字，避免大文件超时
     """
+    MAX_CHARS_PER_CHAPTER = 3000
     all_scenes: list[Scene] = []
     all_characters = set()
 
     for chapter in novel_file.chapters:
-        scenes = convert_chapter_to_scenes(chapter, len(all_scenes))
+        # 限制每章处理字数，避免超时
+        limited_chapter = Chapter(
+            index=chapter.index,
+            title=chapter.title,
+            content=chapter.content[:MAX_CHARS_PER_CHAPTER],
+            char_count=min(chapter.char_count, MAX_CHARS_PER_CHAPTER)
+        )
+        scenes = convert_chapter_to_scenes(limited_chapter, len(all_scenes))
         all_scenes.extend(scenes)
         for scene in scenes:
             all_characters.update(scene.characters)
