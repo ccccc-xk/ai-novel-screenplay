@@ -273,7 +273,6 @@ function initUpload() {
 async function handleFile(file) {
     const ext = file.name.split(".").pop().toLowerCase();
     if (!["txt", "docx"].includes(ext)) {
-        alert("仅支持 .txt 和 .docx 格式");
         return;
     }
 
@@ -305,9 +304,12 @@ async function handleFile(file) {
         const formData = new FormData();
         formData.append("file", file);
         const res = await fetch("/api/parse", { method: "POST", body: formData });
+        if (!res.ok) {
+            let detail = "解析失败";
+            try { detail = (await res.json()).detail || detail; } catch(e) {}
+            throw new Error(detail);
+        }
         const data = await res.json();
-
-        if (!res.ok) throw new Error(data.detail || "解析失败");
 
         state.chapters = data.chapters;
         $("#chapter-list").innerHTML = data.chapters.map(ch =>
@@ -319,8 +321,7 @@ async function handleFile(file) {
 
         $("#btn-next-1").disabled = false;
     } catch (err) {
-        alert("文件解析失败: " + err.message);
-        $("#btn-remove").click();
+        console.warn("API解析失败:", err.message);
     }
 }
 
