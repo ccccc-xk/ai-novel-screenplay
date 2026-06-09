@@ -303,7 +303,7 @@ async function handleFile(file) {
     // 大文件（>1MB）：客户端解析，避免上传超时
     if (file.size > 1024 * 1024) {
         try {
-            const text = await file.text();
+            const text = await readFileAsText(file);
             const chapters = parseChaptersFromText(text);
             state.chapters = chapters;
             $("#chapter-list").innerHTML = chapters.slice(0, 20).map(ch =>
@@ -501,7 +501,7 @@ async function startRuleConversion() {
                 fd.append("chapters_json", JSON.stringify(batch.map(ch => ({
                     index: ch.index,
                     title: ch.title,
-                    content: ch.content
+                    content: ch.content.substring(0, 1500) // 限制每章1500字符，确保批次<1MB
                 }))));
                 fd.append("scene_start", String(totalScenes));
 
@@ -675,33 +675,89 @@ function addLog(text, container, type = "") {
 }
 
 // ===== 客户端章节解析（大文件用，避免上传整个文件超时） =====
+
+// 编码检测读取：自动尝试 GBK/UTF-8
+function readFileAsText(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+            const buf = new Uint8Array(reader.result);
+            // 检查是否包含高字节（GBK特征）
+            const hasHighBytes = buf.some(b => b > 127);
+            if (hasHighBytes) {
+                // 尝试GBK解码
+                try {
+                    const dec = new TextDecoder("gbk", { fatal: true });
+                    resolve(dec.decode(buf));
+                    return;
+                } catch(e) {}
+            }
+            // 默认UTF-8
+            resolve(new TextDecoder("utf-8").decode(buf));
+        };
+        reader.onerror = () => reject(new Error("读取文件失败"));
+        reader.readAsArrayBuffer(file);
+    });
+}
+
 function parseChaptersFromText(text) {
-    const patterns = [
-        /^第[一二三四五六七八九十百千万\d]+[章节回]\s*.*/gm,
-        /^Chapter\s+\d+.*/gim,
-        /^\d+\.\s+.*/gm,
-        /^序章.*/gm, /^楔子.*/gm, /^尾声.*/gm, /^番外.*/gm,
-    ];
-    const titleRe = new RegExp(patterns.map(p => p.source).join("|"), "gm");
-    const titles = [];
+    // 主模式：章节标题
+    const mainPattern = /^第[零一二三四五六七八九十百千万\d\s]{1,15}[章节回卷集部篇]\s*.*/gm;
+    // 辅助模式
+    const auxPattern = /^(?:Chapter|CHAPTER)\s*\d+.*/gm;
+    const numPattern = /^\d{1,4}[.、]\s+.*/gm;
+    const specialPattern = /^(?:序章|序言|前言|楔子|引子|尾声|后记|番外|完结).*/gm;
+
+    let titles = [];
     let m;
-    while ((m = titleRe.exec(text)) !== null) {
-        titles.push({ title: m[0].trim(), pos: m.index });
+
+    // 收集所有匹配
+    for (const pattern of [mainPattern, auxPattern, numPattern, specialPattern]) {
+        pattern.lastIndex = 0;
+        while ((m = pattern.exec(text)) !== null) {
+            titles.push({ title: m[0].trim(), pos: m.index });
+        }
     }
-    const chapters = [];
-    for (let i = 0; i < titles.length; i++) {
-        const start = titles[i].pos;
-        const end = i + 1 < titles.length ? titles[i + 1].pos : text.length;
-        const content = text.substring(start, end).trim();
-        chapters.push({
-            index: i + 1,
-            title: titles[i].title.substring(0, 50),
-            content: content,
-            char_count: content.length
-        });
+
+    // 按位置排序去重
+    titles.sort((a, b) => a.pos - b.pos);
+    titles = titles.filter((t, i) => i === 0 || t.pos - titles[i - 1].pos > 50);
+
+    if (titles.length > 0) {
+        const chapters = [];
+        for (let i = 0; i < titles.length; i++) {
+            const start = titles[i].pos;
+            const end = i + 1 < titles.length ? titles[i + 1].pos : text.length;
+            const content = text.substring(start, end).trim();
+            chapters.push({
+                index: i + 1,
+                title: titles[i].title.substring(0, 50),
+                content: content,
+                char_count: content.length
+            });
+        }
+        return chapters;
     }
-    if (chapters.length === 0) {
-        chapters.push({ index: 1, title: "全文", content: text, char_count: text.length });
+
+    // 兜底：按段落智能分块（每块约400KB）
+    const BLOCK_SIZE = 400000;
+    const paragraphs = text.split(/\n\s*\n/);
+    const chunks = [];
+    let current = "";
+    for (const para of paragraphs) {
+        if (current.length + para.length > BLOCK_SIZE && current.length > 0) {
+            chunks.push(current);
+            current = para;
+        } else {
+            current += (current ? "\n\n" : "") + para;
+        }
     }
-    return chapters;
+    if (current) chunks.push(current);
+
+    return chunks.map((content, i) => ({
+        index: i + 1,
+        title: `第${i + 1}段`,
+        content: content,
+        char_count: content.length
+    }));
 }
