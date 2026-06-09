@@ -482,7 +482,7 @@ async function startRuleConversion() {
             progressFill.style.width = "40%";
             progressText.textContent = "分批转换中...";
 
-            const BATCH_SIZE = state.chapters.length;
+            const BATCH_SIZE = 50;
             const novelTitle = $("#novel-title").value.trim() || (state.file ? state.file.name.replace(/\.\w+$/, "") : "");
             let allYamlScenes = [];
             let totalScenes = 0;
