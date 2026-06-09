@@ -405,11 +405,11 @@ async function startConversion() {
     try {
         addLog(`🚀 正在使用 ${model?.name || state.provider} 一键转换...`, log);
 
-        // 大文件截取前500KB避免超时
+        // 大文件截取前100KB避免Render超时
         let uploadFile = state.file;
-        if (state.file.size > 500 * 1024) {
-            addLog("📄 文件较大，截取前500KB进行转换...", log);
-            uploadFile = state.file.slice(0, 500 * 1024, "text/plain");
+        if (state.file.size > 100 * 1024) {
+            addLog("📄 文件较大，截取前100KB进行转换...", log);
+            uploadFile = state.file.slice(0, 100 * 1024, "text/plain");
             uploadFile = new File([uploadFile], state.file.name, { type: "text/plain" });
         }
 
@@ -467,11 +467,11 @@ async function startRuleConversion() {
         progressFill.style.width = "50%";
         progressText.textContent = "规则转换中...";
 
-        // 大文件截取前500KB避免超时
+        // 大文件截取前100KB避免Render超时
         let uploadFile = state.file;
-        if (state.file.size > 500 * 1024) {
-            addLog("📄 文件较大，截取前500KB进行转换...", log);
-            uploadFile = state.file.slice(0, 500 * 1024, "text/plain");
+        if (state.file.size > 100 * 1024) {
+            addLog("📄 文件较大（" + (state.file.size / 1024 / 1024).toFixed(1) + "MB），截取前100KB进行转换...", log);
+            uploadFile = state.file.slice(0, 100 * 1024, "text/plain");
             uploadFile = new File([uploadFile], state.file.name, { type: "text/plain" });
         }
 
@@ -479,7 +479,15 @@ async function startRuleConversion() {
         formData.append("file", uploadFile);
         formData.append("novel_title", $("#novel-title").value.trim());
 
-        const res = await fetch("/api/convert/rule", { method: "POST", body: formData });
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 25000);
+
+        const res = await fetch("/api/convert/rule", {
+            method: "POST",
+            body: formData,
+            signal: controller.signal
+        });
+        clearTimeout(timeoutId);
         if (!res.ok) {
             let detail = "转换失败";
             try { detail = (await res.json()).detail || detail; } catch(e) {}
