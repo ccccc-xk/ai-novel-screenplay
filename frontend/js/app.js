@@ -405,8 +405,16 @@ async function startConversion() {
     try {
         addLog(`🚀 正在使用 ${model?.name || state.provider} 一键转换...`, log);
 
+        // 大文件截取前500KB避免超时
+        let uploadFile = state.file;
+        if (state.file.size > 500 * 1024) {
+            addLog("📄 文件较大，截取前500KB进行转换...", log);
+            uploadFile = state.file.slice(0, 500 * 1024, "text/plain");
+            uploadFile = new File([uploadFile], state.file.name, { type: "text/plain" });
+        }
+
         const formData = new FormData();
-        formData.append("file", state.file);
+        formData.append("file", uploadFile);
         formData.append("provider", state.provider);
         formData.append("api_key", userApiKey);
         formData.append("api_base", apiBase);
@@ -455,17 +463,29 @@ async function startRuleConversion() {
     progressText.textContent = "解析中...";
 
     try {
-        const formData = new FormData();
-        formData.append("file", state.file);
-        formData.append("novel_title", $("#novel-title").value.trim());
-
         addLog("⚙️ 正在应用规则转换...", log);
         progressFill.style.width = "50%";
         progressText.textContent = "规则转换中...";
 
+        // 大文件截取前500KB避免超时
+        let uploadFile = state.file;
+        if (state.file.size > 500 * 1024) {
+            addLog("📄 文件较大，截取前500KB进行转换...", log);
+            uploadFile = state.file.slice(0, 500 * 1024, "text/plain");
+            uploadFile = new File([uploadFile], state.file.name, { type: "text/plain" });
+        }
+
+        const formData = new FormData();
+        formData.append("file", uploadFile);
+        formData.append("novel_title", $("#novel-title").value.trim());
+
         const res = await fetch("/api/convert/rule", { method: "POST", body: formData });
+        if (!res.ok) {
+            let detail = "转换失败";
+            try { detail = (await res.json()).detail || detail; } catch(e) {}
+            throw new Error(detail);
+        }
         const data = await res.json();
-        if (!res.ok) throw new Error(data.detail || "转换失败");
 
         progressFill.style.width = "100%";
         progressText.textContent = "转换完成！";
