@@ -255,5 +255,6 @@ def convert_chapters_to_screenplay_yaml(
         if action_texts:
             scene.summary = action_texts[0][:50]
 
-    data = {"scenes": [s.model_dump() for s in all_scenes]}
-    return yaml.dump(data, allow_unicode=True, default_flow_style=False, sort_keys=False)
+    # 返回纯场景列表（不含scenes:包装），便于前端多批次拼接
+    scenes_data = [s.model_dump() for s in all_scenes]
+    return yaml.dump(scenes_data, allow_unicode=True, default_flow_style=False, sort_keys=False)

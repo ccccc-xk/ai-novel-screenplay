@@ -514,16 +514,29 @@ async function startRuleConversion() {
                 const data = await res.json();
                 totalScenes += data.scene_count;
                 data.characters.forEach(c => allCharacters.add(c));
-                // 提取YAML中的scenes部分
-                const scenesMatch = data.yaml.match(/scenes:\n([\s\S]*)/);
-                if (scenesMatch) allYamlScenes.push(scenesMatch[1]);
+                // 提取YAML场景列表（后端返回纯场景列表）
+                const yamlTrimmed = data.yaml.trim();
+                if (yamlTrimmed && yamlTrimmed !== "[]") allYamlScenes.push(yamlTrimmed);
 
                 addLog(`✅ 第 ${batchNum} 批完成，${data.scene_count} 个场景`, log);
                 progressFill.style.width = `${30 + (batchNum / totalBatches) * 65}%`;
             }
 
             // 组装最终YAML
-            const finalYaml = `metadata:\n  title: ${novelTitle}\n  source_chapters: ${state.chapters.length}\n  total_scenes: ${totalScenes}\n  characters:\n${[...allCharacters].sort().map(c => `  - ${c}`).join("\n")}\n  version: '1.0'\n\n${allYamlScenes.join("")}`.replace(/\n{3,}/g, "\n\n");
+            const charYaml = [...allCharacters].sort().map(c => `  - ${c}`).join("\n");
+            const scenesYaml = allYamlScenes.join("\n").trim();
+            const finalYaml = [
+                `metadata:`,
+                `  title: ${novelTitle}`,
+                `  source_chapters: ${state.chapters.length}`,
+                `  total_scenes: ${totalScenes}`,
+                `  characters:`,
+                charYaml || "  []",
+                `  version: '1.0'`,
+                ``,
+                `scenes:`,
+                scenesYaml || "  []"
+            ].join("\n");
 
             progressFill.style.width = "100%";
             progressText.textContent = "转换完成！";
