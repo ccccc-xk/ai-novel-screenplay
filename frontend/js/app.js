@@ -300,6 +300,26 @@ async function handleFile(file) {
         return;
     }
 
+    // 大文件（>1MB）：客户端解析，避免上传超时
+    if (file.size > 1024 * 1024) {
+        try {
+            const text = await file.text();
+            const chapters = parseChaptersFromText(text);
+            state.chapters = chapters;
+            $("#chapter-list").innerHTML = chapters.slice(0, 20).map(ch =>
+                `<div class="chapter-item">
+                    <span class="chapter-title">${ch.title}</span>
+                    <span class="chapter-chars">${ch.char_count} 字</span>
+                </div>`
+            ).join("") + (chapters.length > 20 ? `<div class="chapter-item" style="opacity:0.6"><span class="chapter-title">... 共 ${chapters.length} 章</span></div>` : "");
+            $("#btn-next-1").disabled = false;
+        } catch (err) {
+            console.warn("大文件解析失败:", err.message);
+        }
+        return;
+    }
+
+    // 小文件：上传到后端解析
     try {
         const formData = new FormData();
         formData.append("file", file);
@@ -455,6 +475,66 @@ async function startRuleConversion() {
     progressText.textContent = "解析中...";
 
     try {
+        // 大文件：客户端已解析章节，分批发送（不上传整个文件）
+        const hasClientContent = state.chapters.length > 0 && state.chapters[0].content;
+        if (hasClientContent) {
+            addLog("📦 大文件模式：客户端解析 + 分批发送...", log);
+            progressFill.style.width = "40%";
+            progressText.textContent = "分批转换中...";
+
+            const BATCH_SIZE = 10;
+            const novelTitle = $("#novel-title").value.trim() || (state.file ? state.file.name.replace(/\.\w+$/, "") : "");
+            let allYamlScenes = [];
+            let totalScenes = 0;
+            let allCharacters = new Set();
+            const totalBatches = Math.ceil(state.chapters.length / BATCH_SIZE);
+
+            for (let i = 0; i < state.chapters.length; i += BATCH_SIZE) {
+                const batch = state.chapters.slice(i, i + BATCH_SIZE);
+                const batchNum = Math.floor(i / BATCH_SIZE) + 1;
+
+                addLog(`⚙️ 第 ${batchNum}/${totalBatches} 批（${batch[0].title} ~ ${batch[batch.length - 1].title}）`, log);
+                progressText.textContent = `转换中 ${Math.round(30 + (batchNum / totalBatches) * 65)}%...`;
+
+                const fd = new FormData();
+                fd.append("novel_title", novelTitle);
+                fd.append("chapters_json", JSON.stringify(batch.map(ch => ({
+                    index: ch.index,
+                    title: ch.title,
+                    content: ch.content
+                }))));
+                fd.append("scene_start", String(totalScenes));
+
+                const res = await fetch("/api/convert/batch", { method: "POST", body: fd });
+                if (!res.ok) {
+                    let detail = "批量转换失败";
+                    try { detail = (await res.json()).detail || detail; } catch(e) {}
+                    throw new Error(detail);
+                }
+                const data = await res.json();
+                totalScenes += data.scene_count;
+                data.characters.forEach(c => allCharacters.add(c));
+                // 提取YAML中的scenes部分
+                const scenesMatch = data.yaml.match(/scenes:\n([\s\S]*)/);
+                if (scenesMatch) allYamlScenes.push(scenesMatch[1]);
+
+                addLog(`✅ 第 ${batchNum} 批完成，${data.scene_count} 个场景`, log);
+                progressFill.style.width = `${30 + (batchNum / totalBatches) * 65}%`;
+            }
+
+            // 组装最终YAML
+            const finalYaml = `metadata:\n  title: ${novelTitle}\n  source_chapters: ${state.chapters.length}\n  total_scenes: ${totalScenes}\n  characters:\n${[...allCharacters].sort().map(c => `  - ${c}`).join("\n")}\n  version: '1.0'\n\n${allYamlScenes.join("")}`.replace(/\n{3,}/g, "\n\n");
+
+            progressFill.style.width = "100%";
+            progressText.textContent = "转换完成！";
+            addLog(`🎉 转换完成！共 ${totalScenes} 个场景，${allCharacters.size} 个角色`, log, "success");
+            state.yamlOutput = finalYaml;
+            state.screenplay = { title: novelTitle, characters: [...allCharacters].sort() };
+            setTimeout(() => showResult({ yaml: finalYaml, scene_count: totalScenes, metadata: state.screenplay }), 800);
+            return;
+        }
+
+        // 小文件：上传整个文件到后端
         addLog("⚙️ 正在应用规则转换...", log);
         progressFill.style.width = "50%";
         progressText.textContent = "规则转换中...";
@@ -462,8 +542,6 @@ async function startRuleConversion() {
         const formData = new FormData();
         formData.append("file", state.file);
         formData.append("novel_title", $("#novel-title").value.trim());
-
-        addLog("⚙️ 正在应用规则转换（大文件可能需要1-2分钟）...", log);
 
         const res = await fetch("/api/convert/rule", { method: "POST", body: formData });
         if (!res.ok) {
@@ -581,4 +659,36 @@ function addLog(text, container, type = "") {
     div.textContent = `[${new Date().toLocaleTimeString()}] ${text}`;
     container.appendChild(div);
     container.scrollTop = container.scrollHeight;
+}
+
+// ===== 客户端章节解析（大文件用，避免上传整个文件超时） =====
+function parseChaptersFromText(text) {
+    const patterns = [
+        /^第[一二三四五六七八九十百千万\d]+[章节回]\s*.*/gm,
+        /^Chapter\s+\d+.*/gim,
+        /^\d+\.\s+.*/gm,
+        /^序章.*/gm, /^楔子.*/gm, /^尾声.*/gm, /^番外.*/gm,
+    ];
+    const titleRe = new RegExp(patterns.map(p => p.source).join("|"), "gm");
+    const titles = [];
+    let m;
+    while ((m = titleRe.exec(text)) !== null) {
+        titles.push({ title: m[0].trim(), pos: m.index });
+    }
+    const chapters = [];
+    for (let i = 0; i < titles.length; i++) {
+        const start = titles[i].pos;
+        const end = i + 1 < titles.length ? titles[i + 1].pos : text.length;
+        const content = text.substring(start, end).trim();
+        chapters.push({
+            index: i + 1,
+            title: titles[i].title.substring(0, 50),
+            content: content,
+            char_count: content.length
+        });
+    }
+    if (chapters.length === 0) {
+        chapters.push({ index: 1, title: "全文", content: text, char_count: text.length });
+    }
+    return chapters;
 }

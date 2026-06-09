@@ -223,3 +223,37 @@ def convert_novel_by_rule(novel_file: NovelFile, novel_title: str = "") -> Scree
     )
 
     return Screenplay(metadata=metadata, scenes=all_scenes)
+
+
+def convert_chapters_to_screenplay_yaml(
+    chapters: list[dict],
+    novel_title: str = "",
+    scene_start: int = 0
+) -> str:
+    """
+    批量接口：接收章节数据列表，返回YAML格式的场景部分（不含metadata）
+    用于前端分批发送大文件，避免上传整个文件导致超时
+    """
+    all_scenes: list[Scene] = []
+    all_characters = set()
+
+    for ch_data in chapters:
+        limited_content = ch_data["content"][:1000]
+        chapter = Chapter(
+            index=ch_data["index"],
+            title=ch_data["title"],
+            content=limited_content,
+            char_count=min(len(limited_content), 1000)
+        )
+        scenes = convert_chapter_to_scenes(chapter, scene_start + len(all_scenes))
+        all_scenes.extend(scenes)
+        for scene in scenes:
+            all_characters.update(scene.characters)
+
+    for scene in all_scenes:
+        action_texts = [l.action.content for l in scene.lines if l.line_type == "action" and l.action]
+        if action_texts:
+            scene.summary = action_texts[0][:50]
+
+    data = {"scenes": [s.model_dump() for s in all_scenes]}
+    return yaml.dump(data, allow_unicode=True, default_flow_style=False, sort_keys=False)

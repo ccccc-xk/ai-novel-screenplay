@@ -345,3 +345,44 @@ async def convert_novel_by_rule(
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"规则转换失败: {str(e)}")
+
+
+@app.post("/api/convert/batch")
+async def convert_batch(
+    novel_title: str = Form(""),
+    chapters_json: str = Form("[]"),
+    scene_start: int = Form(0)
+):
+    """
+    批量规则转换：接收JSON格式的章节数据，返回YAML场景
+    用于大文件客户端解析后分批发送，避免整个文件上传超时
+    """
+    try:
+        chapters = json.loads(chapters_json)
+        if not chapters:
+            raise HTTPException(status_code=400, detail="没有章节数据")
+
+        from backend.converter.rule_converter import convert_chapters_to_screenplay_yaml
+        yaml_output = convert_chapters_to_screenplay_yaml(chapters, novel_title, scene_start)
+
+        # 统计场景数和角色
+        scene_count = yaml_output.count("scene_number:")
+        characters = set()
+        for ch in chapters:
+            for line in ch.get("content", "").split("\n"):
+                import re
+                for m in re.finditer(r'([^\s,，。！!？?""]{2,4})[说道喊问答叫嚷吼笑了笑叹怒冷冷轻低声]', line):
+                    name = m.group(1).strip()
+                    if 2 <= len(name) <= 4 and not any(c in name for c in '的了吗呢啊吧呀哦嗯'):
+                        characters.add(name)
+
+        return {
+            "success": True,
+            "yaml": yaml_output,
+            "scene_count": scene_count,
+            "characters": sorted(list(characters))
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"批量转换失败: {str(e)}")
