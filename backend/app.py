@@ -365,21 +365,18 @@ async def convert_batch(
         from backend.converter.rule_converter import convert_chapters_to_screenplay_yaml
         yaml_output = convert_chapters_to_screenplay_yaml(chapters, novel_title, scene_start)
 
-        # 统计场景数和角色
-        scene_count = yaml_output.count("scene_number:")
+        # 从YAML中提取实际出现的角色（只取对话中的角色名）
+        import re as _re
         characters = set()
-        for ch in chapters:
-            for line in ch.get("content", "").split("\n"):
-                import re
-                for m in re.finditer(r'([^\s,，。！!？?""]{2,4})[说道喊问答叫嚷吼笑了笑叹怒冷冷轻低声]', line):
-                    name = m.group(1).strip()
-                    if 2 <= len(name) <= 4 and not any(c in name for c in '的了吗呢啊吧呀哦嗯'):
-                        characters.add(name)
+        for m in _re.finditer(r'character:\s*(.+)', yaml_output):
+            name = m.group(1).strip()
+            if name and len(name) >= 2:
+                characters.add(name)
 
         return {
             "success": True,
             "yaml": yaml_output,
-            "scene_count": scene_count,
+            "scene_count": yaml_output.count("scene_number:"),
             "characters": sorted(list(characters))
         }
     except HTTPException:

@@ -41,29 +41,50 @@ SCENE_SHIFT_WORDS = [
 
 EXT_LOCATIONS = ['街道', '马路', '路上', '河边', '山上', '公园', '广场', '花园', '操场', '天台', '楼顶']
 
-BAD_NAME_CHARS = set('的了吗呢啊吧呀嘛着过还在不也有都人这那我你他她一二三四五六七八九十递接看走跑拿放站坐推打开转')
-BAD_NAME_SUFFIXES = set('慌忙急忙急急冷冷淡淡轻轻缓缓慢慢狠狠微微默默悄悄偷偷认真紧张着急')
+# ===== 角色名验证 =====
+
+# 常见中国姓氏（白名单思路：名字必须以姓氏开头）
+SURNAMES = set(
+    '赵钱孙李周吴郑王冯陈褚卫蒋沈韩杨朱秦尤许何吕施张孔曹严华金魏陶姜'
+    '戚谢邹喻柏水窦章云苏潘葛奚范彭郎鲁韦昌马苗凤花方俞任袁柳酆鲍史唐'
+    '费廉岑薛雷贺倪汤滕殷罗毕郝邬安常乐于时傅皮卞齐康伍余元卜顾孟平黄'
+    '和穆萧尹姚邵湛汪祁毛禹狄米贝明臧计伏成戴谈宋茅庞熊纪舒屈项祝董梁'
+    '杜阮蓝闵席季麻强贾路娄危江童颜郭梅盛林刁钟徐邱骆高夏蔡田樊胡凌霍'
+    '虞万支柯昝管卢莫经房裘缪干解应宗丁宣贲邓郁单杭洪包诸左石崔吉钮龚'
+    '程嵇邢滑裴陆荣翁荀羊於惠甄曲家封芮羿储靳汲邴糜松井段富巫乌焦巴弓'
+    '牧隗山谷车侯宓蓬全郗班仰秋仲伊宫宁仇栾暴甘钭厉戎祖武符刘景詹束龙'
+    '叶幸司韶郜黎蓟薄印宿白怀蒲邰从鄂索咸籍赖卓蔺屠蒙池乔阴郁胥能苍双'
+    '闻莘党翟谭贡劳逄姬申扶堵冉宰郦雍却璩桑桂濮牛寿通边扈燕冀郏浦尚农'
+    '温别庄晏柴瞿阎充慕连茹习宦艾鱼容向古易慎戈廖庾终暨居衡步都耿满弘'
+    '匡国文寇广禄阙东欧殳沃利蔚越夔隆师巩厍聂晁勾敖融冷訾辛阚那简饶空'
+    '曾毋沙乜养鞠须丰巢关蒯相查后荆红游竺权逯盖益桓公'
+    # 常见复姓
+    '司马上官欧阳夏侯诸葛闻人东方赫连皇甫尉迟公羊澹台公冶宗政濮阳淳于'
+    '单于太叔申屠公孙仲孙轩辕令狐钟离宇文长孙慕容鲜于闾丘司徒司空亓官'
+    '司寇仉督子车颛孙端木巫马公西漆雕乐正壤驷公良拓跋夹谷宰父谷梁段干'
+    '百里东郭南门呼延归海羊舌微生梁丘左丘东门西门南宫'
+    # 也包含常见名字用字作为fallback
+    '林苏陈李张王赵刘周吴郑黄杨朱许何郭马胡罗高谢韩唐冯于董萧程曹袁邓'
+)
+
+# 只排除明确的非人名用字（代词、数词、常见动词）
+BAD_NAME_CHARS = set(
+    '的了吗呢啊吧呀嘛着过还在不也有都人这那我你他她'
+    '一二三四五六七八九十百千万'
+    '递接看走跑拿放站坐推打开转说笑问答叫喊怒骂喝叹'
+)
 
 
 def _valid_name(name: str) -> bool:
-    if len(name) < 2 or len(name) > 4:
+    """严格验证：名字必须2-3字，以姓氏开头"""
+    if len(name) < 2 or len(name) > 3:
         return False
     if any(c in BAD_NAME_CHARS for c in name):
         return False
-    if name in BAD_NAME_SUFFIXES:
+    # 必须以姓氏开头
+    if name[0] not in SURNAMES:
         return False
     return True
-
-
-def _clean_name(name: str) -> str:
-    """清理可能包含动作后缀的名字（如 '苏然慌忙' → '苏然'）"""
-    # 尝试从长名字中提取有效人名（2-3字）
-    for length in [2, 3]:
-        candidate = name[:length]
-        rest = name[length:]
-        if _valid_name(candidate) and rest and rest[0] in '慌忙急冷淡轻轻缓慢狠微默悄偷认紧':
-            return candidate
-    return name if _valid_name(name) else ""
 
 
 # ===== 场景检测 =====
@@ -110,7 +131,7 @@ def extract_all_dialogues(text: str) -> list:
 
     # 模式A：句首 人名+说话动词+冒号+引号
     pat_a = re.compile(
-        f'(?:^|[。！？\\n])\\s*([一-鿿]{{2,4}})(?:{SPEECH_VERBS})[着了道]?\\s*[：:]\\s*["「『]([^"」』]+?)["」』]'
+        f'(?:^|[。！？\\n])\\s*([一-鿿]{{2,3}})(?:{SPEECH_VERBS})[着了道]?\\s*[：:]\\s*["「『]([^"」』]+?)["」』]'
     )
     for m in pat_a.finditer(text):
         n, c = m.group(1).strip(), m.group(2).strip()
@@ -118,9 +139,9 @@ def extract_all_dialogues(text: str) -> list:
             results.append((n, c, m.start(), m.end()))
             used.add((m.start(), m.end()))
 
-    # 模式B：句首 人名+冒号+引号（无说话动词）
+    # 模式B：句首 人名+冒号+引号
     pat_b = re.compile(
-        f'(?:^|[。！？\\n])\\s*([一-鿿]{{2,4}})\\s*[：:]\\s*["「『]([^"」』]+?)["」』]'
+        f'(?:^|[。！？\\n])\\s*([一-鿿]{{2,3}})\\s*[：:]\\s*["「『]([^"」』]+?)["」』]'
     )
     for m in pat_b.finditer(text):
         if any(m.start() >= r[0] and m.start() < r[1] for r in used):
@@ -130,19 +151,7 @@ def extract_all_dialogues(text: str) -> list:
             results.append((n, c, m.start(), m.end()))
             used.add((m.start(), m.end()))
 
-    # 模式B2：任意位置 人名+冒号+引号（处理"她尽量保持平静：\"xxx\""）
-    pat_b2 = re.compile(
-        f'([一-鿿]{{2,4}})\\s*[：:]\\s*["「『]([^"」』]+?)["」』]'
-    )
-    for m in pat_b2.finditer(text):
-        if any(m.start() >= r[0] and m.start() < r[1] for r in used):
-            continue
-        n, c = m.group(1).strip(), m.group(2).strip()
-        if n and c and _valid_name(n):
-            results.append((n, c, m.start(), m.end()))
-            used.add((m.start(), m.end()))
-
-    # 模式C：纯引号，向前/向后搜索说话人
+    # 模式C：纯引号，只通过向前搜索找说话人（要求有说话动词或冒号）
     pat_c = re.compile('["「『‘]([^"」』’"\\n]{2,})["」』’"]?')
     for m in pat_c.finditer(text):
         if any(m.start() >= r[0] and m.start() < r[1] for r in used):
@@ -151,37 +160,34 @@ def extract_all_dialogues(text: str) -> list:
         if not content or len(content) < 2:
             continue
 
-        # 向前搜索：XXX说/道/笑 + 冒号
+        # 向前50字内找 "人名+说话动词" 或 "人名+冒号"
         pre = text[max(0, m.start() - 50):m.start()]
         name = ""
-        pm = re.search(f'([一-鿿]{{2,4}})(?:{SPEECH_VERBS})[着了道]?\\s*[：:]*\\s*$', pre)
+
+        # 人名+说话动词+冒号
+        pm = re.search(f'([一-鿿]{{2,3}})(?:{SPEECH_VERBS})[着了道]?\\s*[：:]*\\s*$', pre)
         if pm and _valid_name(pm.group(1)):
             name = pm.group(1)
 
-        # 向前搜索：XXX（动作）。
+        # 人名+冒号（无说话动词）
         if not name:
-            pm = re.search(r'([一-鿿]{2,4})[^\n。！？]{0,20}[。！？]\s*$', pre)
+            pm = re.search(r'([一-鿿]{2,3})\s*[：:]\s*$', pre)
             if pm and _valid_name(pm.group(1)):
                 name = pm.group(1)
 
-        # 向后搜索：引号后紧跟 人名+动作/说话动词
-        if not name:
-            post = text[m.end():m.end() + 30]
-            pm = re.match(r'([一-鿿]{2,4})', post)
-            if pm:
-                name = _clean_name(pm.group(1))
-
-        results.append((name, content, m.start(), m.end()))
+        # 找到有效说话人才添加
+        if name:
+            results.append((name, content, m.start(), m.end()))
 
     results.sort(key=lambda x: x[2])
     return results
 
 
 def extract_parenthetical(text: str, dialog_start: int) -> str:
-    pre = text[max(0, dialog_start - 60):dialog_start]
+    pre = text[max(0, dialog_start - 40):dialog_start]
     m = re.search(
         '(低声|轻声|大声|高声|沉声|冷冷|淡淡|幽幽|默默|轻轻|缓缓|狠狠|微微|急忙|慌忙|'
-        '紧张|认真|严肃|诚恳|温柔|无奤|苦笑|微笑|冷笑|惊讶|愤怒|平静|好奇|疑惑|感慨|羞涩|尴尬)',
+        '紧张|认真|严肃|诚恳|温柔|苦笑|微笑|冷笑|惊讶|愤怒|平静|好奇|疑惑|感慨|羞涩|尴尬)',
         pre
     )
     return m.group(1) if m else None
