@@ -501,7 +501,7 @@ async function startRuleConversion() {
                 fd.append("chapters_json", JSON.stringify(batch.map(ch => ({
                     index: ch.index,
                     title: ch.title,
-                    content: ch.content.substring(0, 1500) // 限制每章1500字符，确保批次<1MB
+                    content: ch.content.substring(0, 3000) // 每章3000字符，匹配后端处理上限
                 }))));
                 fd.append("scene_start", String(totalScenes));
 
